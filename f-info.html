@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Flight Tracker</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/leaflet/1.0.3/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/leaflet/1.0.3/leaflet.js"></script>
+    <style>
+        #map {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        var mymap = L.map('map').setView([51.505, -0.09], 2);
+        var flights = [];
+
+        function getFlights() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'https://opensky-network.org/api/states/all');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('Authorization', 'Basic your_base64_encoded_credentials_here');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var data = JSON.parse(xhr.responseText);
+                    if (data.states) {
+                        for (var i = 0; i < data.states.length; i++) {
+                            var flight = data.states[i];
+                            if (flight[5] && flight[6]) {
+                                flights.push({
+                                    callsign: flight[1],
+                                    lat: flight[6],
+                                    lon: flight[5],
+                                    altitude: flight[7] || 0,
+                                    speed: flight[9] || 0,
+                                    track: flight[10] || 0
+                                });
+                            }
+                        }
+                        plotFlights();
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        function plotFlights() {
+            for (var i = 0; i < flights.length; i++) {
+                var flight = flights[i];
+                var marker = L.marker([flight.lat, flight.lon]).addTo(mymap);
+                marker.bindPopup(
+                    "Flight: " + flight.callsign + "<br>" +
+                    "Altitude: " + flight.altitude + " m<br>" +
+                    "Speed: " + flight.speed + " m/s<br>" +
+                    "Track: " + flight.track + " degrees"
+                );
+            }
+        }
+
+        getFlights();
+    </script>
+</body>
+</html>
